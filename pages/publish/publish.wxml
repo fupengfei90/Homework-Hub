@@ -1,0 +1,130 @@
+<!--pages/publish/publish.wxml-->
+<view class="container">
+  <view class="form-container">
+    <!-- 作业标题 -->
+    <view class="form-item">
+      <view class="form-label">作业标题 <text class="required">*</text></view>
+      <input class="form-input" 
+             placeholder="请输入作业标题"
+             value="{{title}}"
+             bindinput="onTitleInput"
+             maxlength="50"/>
+    </view>
+
+    <!-- 学科选择 -->
+    <view class="form-item">
+      <view class="form-label">学科 <text class="required">*</text></view>
+      <picker mode="selector" 
+              range="{{subjects}}" 
+              value="{{subjectIndex}}"
+              bindchange="onSubjectChange">
+        <view class="picker-view">
+          <text class="{{subject ? '' : 'placeholder'}}">
+            {{subject || '请选择学科'}}
+          </text>
+          <text class="arrow">›</text>
+        </view>
+      </picker>
+    </view>
+
+    <!-- 作业内容 -->
+    <view class="form-item">
+      <view class="form-label">作业内容 <text class="required">*</text></view>
+      <textarea class="form-textarea" 
+                placeholder="请输入作业内容描述..."
+                value="{{content}}"
+                bindinput="onContentInput"
+                maxlength="500"
+                show-confirm-bar="{{false}}"/>
+      <view class="char-count">{{content.length}}/500</view>
+    </view>
+
+    <!-- 视频链接/上传 -->
+    <view class="form-item">
+      <view class="form-label">
+        <text class="label-icon">🎬</text>
+        视频链接（可选）
+      </view>
+      <view class="link-input-group" wx:if="{{!videoUrl && !videoLink}}">
+        <input class="link-input" 
+               placeholder="粘贴视频链接（支持腾讯视频、优酷、B站等）"
+               value="{{videoLink}}"
+               bindinput="onVideoLinkInput"/>
+        <view class="paste-btn" bindtap="pasteVideoLink">
+          <text class="paste-icon">📋</text>
+          <text>粘贴</text>
+        </view>
+      </view>
+      <view class="link-display" wx:elif="{{videoLink}}">
+        <view class="link-content">
+          <text class="link-text">{{videoLink}}</text>
+        </view>
+        <view class="link-actions">
+          <text class="delete-link" bindtap="deleteVideo">删除</text>
+        </view>
+      </view>
+      <view class="file-upload-section">
+        <view class="upload-divider">
+          <text class="divider-text">或</text>
+        </view>
+        <view class="upload-btn" bindtap="chooseVideo" wx:if="{{!videoUrl && !videoLink}}">
+          <text class="upload-icon">📤</text>
+          <text>上传视频文件</text>
+        </view>
+        <view class="file-item" wx:elif="{{videoUrl && !videoLink}}">
+          <text class="file-name">{{videoName || '视频文件'}}</text>
+          <text class="delete-file" bindtap="deleteVideo">删除</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 音频链接/上传 -->
+    <view class="form-item">
+      <view class="form-label">
+        <text class="label-icon">🎵</text>
+        音频链接（可选）
+      </view>
+      <view class="link-input-group" wx:if="{{!audioUrl && !audioLink}}">
+        <input class="link-input" 
+               placeholder="粘贴音频链接（支持QQ音乐、网易云等）"
+               value="{{audioLink}}"
+               bindinput="onAudioLinkInput"/>
+        <view class="paste-btn" bindtap="pasteAudioLink">
+          <text class="paste-icon">📋</text>
+          <text>粘贴</text>
+        </view>
+      </view>
+      <view class="link-display" wx:elif="{{audioLink}}">
+        <view class="link-content">
+          <text class="link-text">{{audioLink}}</text>
+        </view>
+        <view class="link-actions">
+          <text class="delete-link" bindtap="deleteAudio">删除</text>
+        </view>
+      </view>
+      <view class="file-upload-section">
+        <view class="upload-divider">
+          <text class="divider-text">或</text>
+        </view>
+        <view class="upload-btn" bindtap="chooseAudio" wx:if="{{!audioUrl && !audioLink}}">
+          <text class="upload-icon">📤</text>
+          <text>上传音频文件</text>
+        </view>
+        <view class="file-item" wx:elif="{{audioUrl && !audioLink}}">
+          <text class="file-name">{{audioName || '音频文件'}}</text>
+          <text class="delete-file" bindtap="deleteAudio">删除</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 提交按钮 -->
+    <view class="submit-container">
+      <button class="submit-btn" 
+              bindtap="submitHomework"
+              disabled="{{uploading}}">
+        {{uploading ? '上传中...' : '发布作业'}}
+      </button>
+    </view>
+  </view>
+</view>
+

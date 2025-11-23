@@ -1,0 +1,28 @@
+# 微信小程序
+project.private.config.json
+node_modules/
+
+# 云函数
+cloudfunctions/*/node_modules/
+cloudfunctions/*/.eslintrc.json
+
+# 日志
+*.log
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# 临时文件
+*.tmp
+*.temp
+*.backup
+
+# 图片资源（如果需要，可以取消注释）
+# images/*.png
+# images/*.jpg
+

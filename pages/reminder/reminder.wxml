@@ -1,0 +1,112 @@
+<!--pages/reminder/reminder.wxml-->
+<view class="container">
+  <view class="reminder-container">
+    <!-- 作业标题 -->
+    <view class="homework-title-section">
+      <text class="title-label">作业</text>
+      <text class="homework-title">{{homeworkTitle}}</text>
+    </view>
+
+    <!-- 提醒时间设置 -->
+    <view class="setting-section">
+      <view class="section-header">
+        <text class="section-icon">⏰</text>
+        <text class="section-title">提醒时间</text>
+      </view>
+      <view class="section-content">
+        <picker mode="time" 
+                value="{{reminderTime}}" 
+                bindchange="onReminderTimeChange">
+          <view class="picker-item">
+            <text class="{{reminderTime ? '' : 'placeholder'}}">
+              {{reminderTime || '选择提醒时间（如：08:00）'}}
+            </text>
+            <text class="arrow">›</text>
+          </view>
+        </picker>
+        <view class="hint-text" wx:if="{{reminderTime}}">
+          每天 {{reminderTime}} 提醒你写作业
+        </view>
+        <view class="cancel-btn" wx:if="{{reminderEnabled}}" bindtap="cancelReminder">
+          取消提醒
+        </view>
+      </view>
+    </view>
+
+    <!-- 目标时间设置 -->
+    <view class="setting-section">
+      <view class="section-header">
+        <text class="section-icon">🌙</text>
+        <text class="section-title">目标完成时间（睡觉时间）</text>
+      </view>
+      <view class="section-content">
+        <picker mode="time" 
+                value="{{targetTime}}" 
+                bindchange="onTargetTimeChange">
+          <view class="picker-item">
+            <text class="{{targetTime ? '' : 'placeholder'}}">
+              {{targetTime || '选择目标时间（如：22:30）'}}
+            </text>
+            <text class="arrow">›</text>
+          </view>
+        </picker>
+        <view class="hint-text" wx:if="{{targetTime}}">
+          计划在 {{targetTime}} 前完成作业
+        </view>
+      </view>
+    </view>
+
+    <!-- 预估完成时间 -->
+    <view class="setting-section">
+      <view class="section-header">
+        <text class="section-icon">⏱️</text>
+        <text class="section-title">预估完成时间</text>
+      </view>
+      <view class="section-content">
+        <view class="slider-container">
+          <slider value="{{estimatedMinutes}}" 
+                  min="10" 
+                  max="180" 
+                  step="5"
+                  show-value="{{true}}"
+                  activeColor="#667eea"
+                  bindchange="onEstimatedTimeChange"/>
+          <view class="slider-labels">
+            <text>10分钟</text>
+            <text>{{estimatedMinutes}}分钟</text>
+            <text>180分钟</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 计算出的开始时间 -->
+    <view class="result-section" wx:if="{{calculatedStartTime}}">
+      <view class="result-card">
+        <view class="result-icon">💡</view>
+        <view class="result-content">
+          <text class="result-title">建议开始时间</text>
+          <text class="result-time">{{calculatedStartTime}}</text>
+          <text class="result-desc">
+            在 {{calculatedStartTime}} 开始写作业，可以在 {{targetTime}} 前完成
+          </text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 操作按钮 -->
+    <view class="action-section">
+      <button class="complete-btn" 
+              bindtap="markAsCompleted"
+              wx:if="{{!isCompleted}}">
+        <text class="btn-icon">✅</text>
+        <text>标记为已完成</text>
+      </button>
+      <view class="completed-badge" wx:else>
+        <text class="badge-icon">✓</text>
+        <text>已完成</text>
+      </view>
+    </view>
+  </view>
+</view>
+

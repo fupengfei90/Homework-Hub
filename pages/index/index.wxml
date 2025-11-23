@@ -1,0 +1,66 @@
+<!--pages/index/index.wxml-->
+<view class="container">
+  <!-- 学科筛选栏 -->
+  <view class="filter-bar">
+    <scroll-view class="filter-scroll" scroll-x="true">
+      <view class="filter-item {{selectedSubject === item ? 'active' : ''}}"
+            wx:for="{{subjects}}" 
+            wx:key="index"
+            data-subject="{{item}}"
+            bindtap="onSubjectChange">
+        {{item}}
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 加载中 -->
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:elif="{{isEmpty}}">
+    <view class="empty-icon">📝</view>
+    <text>暂无作业</text>
+    <text class="empty-hint">点击下方"发布作业"开始使用</text>
+  </view>
+
+  <!-- 作业列表 -->
+  <view class="homework-list" wx:else>
+    <view class="card homework-item" 
+          wx:for="{{filteredList}}" 
+          wx:key="_id"
+          data-id="{{item._id}}"
+          bindtap="viewDetail">
+      
+      <!-- 作业标题和学科 -->
+      <view class="homework-header">
+        <view class="homework-title">{{item.title}}</view>
+        <view class="tag tag-subject">{{item.subject}}</view>
+      </view>
+
+      <!-- 作业内容预览 -->
+      <view class="homework-content">
+        <text class="content-text">{{item.content}}</text>
+      </view>
+
+      <!-- 媒体文件提示 -->
+      <view class="media-hint" wx:if="{{item.videoUrl || item.audioUrl}}">
+        <text class="icon">📎</text>
+        <text wx:if="{{item.videoUrl}}">视频</text>
+        <text wx:if="{{item.audioUrl}}">音频</text>
+      </view>
+
+      <!-- 时间和操作 -->
+      <view class="homework-footer">
+        <text class="time-text">{{item.createTime}}</text>
+        <view class="delete-btn" 
+              data-id="{{item._id}}"
+              catchtap="deleteHomework">
+          删除
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
+

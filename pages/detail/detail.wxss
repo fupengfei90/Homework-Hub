@@ -1,0 +1,235 @@
+/* pages/detail/detail.wxss - 高端设计 */
+.container {
+  padding: 24rpx;
+  background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
+}
+
+.loading {
+  text-align: center;
+  padding: 120rpx 0;
+  color: #95a5a6;
+  font-size: 28rpx;
+}
+
+.detail-container {
+  background: #ffffff;
+  border-radius: 32rpx;
+  padding: 48rpx 40rpx;
+  box-shadow: 0 8rpx 40rpx rgba(0, 0, 0, 0.08);
+  border: 1rpx solid rgba(255, 255, 255, 0.8);
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32rpx;
+  padding-bottom: 32rpx;
+  border-bottom: 2rpx solid #f1f5f9;
+}
+
+.detail-title {
+  flex: 1;
+  font-size: 44rpx;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.5;
+  margin-right: 24rpx;
+  letter-spacing: -0.5rpx;
+}
+
+.detail-time {
+  margin-bottom: 40rpx;
+  font-size: 26rpx;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+}
+
+.detail-time::before {
+  content: '🕐';
+  margin-right: 8rpx;
+}
+
+.detail-content {
+  margin-bottom: 48rpx;
+  padding: 32rpx;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 20rpx;
+  border-left: 4rpx solid #667eea;
+}
+
+.content-label {
+  font-size: 30rpx;
+  color: #475569;
+  margin-bottom: 24rpx;
+  font-weight: 600;
+}
+
+.content-text {
+  font-size: 32rpx;
+  color: #334155;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.media-section {
+  margin-bottom: 48rpx;
+}
+
+.media-label {
+  font-size: 30rpx;
+  color: #475569;
+  margin-bottom: 24rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+.label-icon {
+  font-size: 36rpx;
+  margin-right: 12rpx;
+}
+
+/* 链接卡片 */
+.link-card {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 20rpx;
+  padding: 32rpx;
+  border: 2rpx solid #e2e8f0;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+}
+
+.link-info {
+  margin-bottom: 24rpx;
+  padding: 20rpx;
+  background: #ffffff;
+  border-radius: 12rpx;
+  border: 1rpx solid #e2e8f0;
+}
+
+.link-url {
+  font-size: 26rpx;
+  color: #475569;
+  word-break: break-all;
+  line-height: 1.6;
+}
+
+.link-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.copy-link-btn {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 32rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  box-shadow: 0 4rpx 12rpx rgba(102, 126, 234, 0.3);
+  transition: all 0.3s;
+}
+
+.copy-link-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 2rpx 8rpx rgba(102, 126, 234, 0.3);
+}
+
+.copy-icon {
+  margin-right: 8rpx;
+  font-size: 32rpx;
+}
+
+.media-container {
+  border-radius: 20rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.video-player {
+  width: 100%;
+  height: 420rpx;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+}
+
+.audio-player {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 20rpx;
+}
+
+.media-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100rpx 40rpx;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e2e8f0 100%);
+  border-radius: 20rpx;
+  border: 2rpx dashed #cbd5e0;
+}
+
+.media-icon {
+  font-size: 96rpx;
+  margin-bottom: 32rpx;
+  filter: drop-shadow(0 4rpx 8rpx rgba(0, 0, 0, 0.1));
+}
+
+.play-btn {
+  padding: 24rpx 48rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  border-radius: 16rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  border: none;
+  box-shadow: 0 8rpx 20rpx rgba(102, 126, 234, 0.3);
+  transition: all 0.3s;
+}
+
+.play-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 4rpx 12rpx rgba(102, 126, 234, 0.3);
+}
+
+.error-text {
+  color: #ff6b6b;
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+/* 提醒设置区域 */
+.reminder-section {
+  margin-top: 48rpx;
+  padding-top: 32rpx;
+  border-top: 2rpx solid #f1f5f9;
+}
+
+.reminder-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #ffffff;
+  border-radius: 20rpx;
+  padding: 28rpx 0;
+  font-size: 32rpx;
+  font-weight: 600;
+  border: none;
+  box-shadow: 0 8rpx 24rpx rgba(245, 158, 11, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.reminder-btn:active {
+  transform: translateY(2rpx);
+  box-shadow: 0 4rpx 16rpx rgba(245, 158, 11, 0.4);
+}
+
+.reminder-icon {
+  margin-right: 12rpx;
+  font-size: 36rpx;
+}
