@@ -1,6 +1,44 @@
 <!--pages/publish/publish.wxml-->
 <view class="container">
   <view class="form-container">
+    <!-- AI智能识别 -->
+    <view class="ai-parse-section">
+      <view class="ai-parse-header" bindtap="toggleAIParse">
+        <view class="ai-parse-title">
+          <text class="ai-icon">🤖</text>
+          <text>AI智能识别</text>
+          <text class="ai-hint">（一键识别学科、标题、链接）</text>
+        </view>
+        <text class="toggle-icon">{{showAIParse ? '▼' : '▶'}}</text>
+      </view>
+      
+      <view class="ai-parse-content" wx:if="{{showAIParse}}">
+        <view class="ai-parse-input-section">
+          <textarea class="ai-parse-textarea" 
+                    placeholder="粘贴作业内容，AI会自动识别学科、标题、视频/音频链接..."
+                    value="{{aiParseContent}}"
+                    bindinput="onAIParseInput"
+                    maxlength="2000"
+                    show-confirm-bar="{{false}}"/>
+          <view class="ai-parse-actions">
+            <view class="paste-ai-btn" bindtap="pasteForAIParse">
+              <text class="paste-icon">📋</text>
+              <text>粘贴</text>
+            </view>
+            <button class="parse-btn" 
+                    bindtap="aiParse"
+                    disabled="{{aiParsing || !aiParseContent.trim()}}">
+              {{aiParsing ? '识别中...' : '开始识别'}}
+            </button>
+          </view>
+        </view>
+        <view class="ai-parse-tips">
+          <text class="tips-icon">💡</text>
+          <text>提示：直接粘贴微信群中的作业内容，AI会自动提取标题、学科和链接</text>
+        </view>
+      </view>
+    </view>
+
     <!-- 作业标题 -->
     <view class="form-item">
       <view class="form-label">作业标题 <text class="required">*</text></view>
