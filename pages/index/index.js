@@ -5,6 +5,7 @@ Page({
   data: {
     homeworkList: [], // 作业列表
     filteredList: [], // 筛选后的列表
+    groupedList: [], // 按日期分组后的列表
     selectedSubject: '全部', // 当前选中的学科
     subjects: ['全部', ...app.globalData.subjects], // 学科列表
     loading: false,
@@ -38,7 +39,8 @@ Page({
         subject: '语文',
         videoUrl: 'https://v.qq.com/x/page/example1.html',
         isVideoLink: true,
-        createTime: this.formatTime(now - 2 * 60 * 60 * 1000)
+        createTime: this.formatTime(now - 2 * 60 * 60 * 1000),
+        dateKey: this.formatDate(now - 2 * 60 * 60 * 1000)
       },
       {
         _id: 'mock_002',
@@ -47,7 +49,8 @@ Page({
         subject: '数学',
         audioUrl: 'https://music.163.com/song?id=example1',
         isAudioLink: true,
-        createTime: this.formatTime(now - 5 * 60 * 60 * 1000)
+        createTime: this.formatTime(now - 5 * 60 * 60 * 1000),
+        dateKey: this.formatDate(now - 5 * 60 * 60 * 1000)
       },
       {
         _id: 'mock_003',
@@ -58,14 +61,16 @@ Page({
         isAudioLink: true,
         videoUrl: 'https://www.bilibili.com/video/example1',
         isVideoLink: true,
-        createTime: this.formatTime(now - 8 * 60 * 60 * 1000)
+        createTime: this.formatTime(now - 8 * 60 * 60 * 1000),
+        dateKey: this.formatDate(now - 8 * 60 * 60 * 1000)
       },
       {
         _id: 'mock_004',
         title: '物理作业：观察生活中的物理现象',
         content: '请观察生活中的物理现象，选择一个你感兴趣的现象，用手机拍摄视频并说明其中的物理原理。例如：1. 为什么水会沸腾？2. 为什么会有影子？3. 为什么磁铁能吸引铁？',
         subject: '物理',
-        createTime: this.formatTime(now - 12 * 60 * 60 * 1000)
+        createTime: this.formatTime(now - 12 * 60 * 60 * 1000),
+        dateKey: this.formatDate(now - 12 * 60 * 60 * 1000)
       },
       {
         _id: 'mock_005',
@@ -74,7 +79,8 @@ Page({
         subject: '化学',
         videoUrl: 'https://v.youku.com/v_show/id_example1.html',
         isVideoLink: true,
-        createTime: this.formatTime(now - 24 * 60 * 60 * 1000)
+        createTime: this.formatTime(now - 24 * 60 * 60 * 1000),
+        dateKey: this.formatDate(now - 24 * 60 * 60 * 1000)
       },
       {
         _id: 'mock_006',
@@ -83,7 +89,8 @@ Page({
         subject: '历史',
         audioUrl: 'https://www.ximalaya.com/sound/example1',
         isAudioLink: true,
-        createTime: this.formatTime(now - 36 * 60 * 60 * 1000)
+        createTime: this.formatTime(now - 36 * 60 * 60 * 1000),
+        dateKey: this.formatDate(now - 36 * 60 * 60 * 1000)
       },
       {
         _id: 'mock_007',
@@ -92,16 +99,79 @@ Page({
         subject: '地理',
         videoUrl: 'https://www.bilibili.com/video/example2',
         isVideoLink: true,
-        createTime: this.formatTime(now - 48 * 60 * 60 * 1000)
+        createTime: this.formatTime(now - 48 * 60 * 60 * 1000),
+        dateKey: this.formatDate(now - 48 * 60 * 60 * 1000)
       },
       {
         _id: 'mock_008',
         title: '生物作业：观察植物细胞',
         content: '使用显微镜观察植物细胞，并绘制细胞结构图。要求：1. 标注细胞壁、细胞膜、细胞核等结构；2. 说明各部分的功能；3. 对比动物细胞和植物细胞的区别。',
         subject: '生物',
-        createTime: this.formatTime(now - 72 * 60 * 60 * 1000)
+        createTime: this.formatTime(now - 72 * 60 * 60 * 1000),
+        dateKey: this.formatDate(now - 72 * 60 * 60 * 1000)
       }
     ];
+  },
+
+  // 将作业按 dateKey（YYYY-MM-DD）分组，用于“按天展示”
+  buildGroupedList(list) {
+    const groups = [];
+    const groupIndexByDateKey = {};
+
+    (list || []).forEach(item => {
+      let dateKey = item.dateKey;
+      if (!dateKey) {
+        // createTime 可能是字符串：YYYY-MM-DD HH:mm
+        if (typeof item.createTime === 'string' && item.createTime.length >= 10) {
+          dateKey = item.createTime.slice(0, 10);
+        } else {
+          dateKey = this.formatDate(item.createTime);
+        }
+      }
+      if (!groupIndexByDateKey[dateKey]) {
+        groupIndexByDateKey[dateKey] = groups.length;
+        groups.push({
+          dateKey,
+          items: [item]
+        });
+      } else {
+        groups[groupIndexByDateKey[dateKey]].items.push(item);
+      }
+    });
+
+    return groups;
+  },
+
+  // 从本地存储读取“模拟作业”（用于云开发不可用时的效果预览）
+  loadLocalHomeworkList() {
+    const localKey = 'local_homework_tasks';
+    try {
+      const list = wx.getStorageSync(localKey) || [];
+      if (!Array.isArray(list) || list.length === 0) return [];
+
+      return list
+        .map(item => {
+          const createTime = item && item.createTime;
+          const formattedCreateTime =
+            typeof createTime === 'string' ? createTime : this.formatTime(createTime);
+
+          const dateKey =
+            item && item.dateKey
+              ? item.dateKey
+              : (typeof formattedCreateTime === 'string' && formattedCreateTime.length >= 10)
+                ? formattedCreateTime.slice(0, 10)
+                : this.formatDate(createTime);
+
+          return {
+            ...item,
+            createTime: formattedCreateTime,
+            dateKey
+          };
+        })
+        .filter(item => item && item._id);
+    } catch (error) {
+      return [];
+    }
   },
 
   // 加载作业列表
@@ -120,28 +190,39 @@ Page({
         // 如果有真实数据，使用真实数据
         homeworkList = result.data.map(item => ({
           ...item,
-          createTime: this.formatTime(item.createTime)
+          createTime: this.formatTime(item.createTime),
+          dateKey: this.formatDate(item.createTime)
         }));
       } else {
-        // 如果没有数据，使用模拟数据
-        console.log('使用模拟数据');
-        homeworkList = this.getMockData();
+        // 如果没有数据，优先使用本地模拟；没有的话再使用模拟数据
+        const localList = this.loadLocalHomeworkList();
+        if (localList.length) {
+          homeworkList = localList;
+        } else {
+          console.log('使用模拟数据');
+          homeworkList = this.getMockData();
+        }
       }
 
+      const groupedList = this.buildGroupedList(homeworkList);
       this.setData({
         homeworkList,
         filteredList: homeworkList,
+        groupedList,
         isEmpty: homeworkList.length === 0,
         loading: false
       });
     } catch (error) {
       console.error('加载作业列表失败，使用模拟数据:', error);
-      // 如果加载失败，使用模拟数据
-      const mockData = this.getMockData();
+      // 如果加载失败，优先使用本地模拟；没有的话再使用模拟数据
+      const localList = this.loadLocalHomeworkList();
+      const homeworkList = localList.length ? localList : this.getMockData();
+      const groupedList = this.buildGroupedList(homeworkList);
       this.setData({
-        homeworkList: mockData,
-        filteredList: mockData,
-        isEmpty: false,
+        homeworkList,
+        filteredList: homeworkList,
+        groupedList,
+        isEmpty: homeworkList.length === 0,
         loading: false
       });
     }
@@ -153,12 +234,19 @@ Page({
     this.setData({ selectedSubject: subject });
     
     if (subject === '全部') {
-      this.setData({ filteredList: this.data.homeworkList });
+      const filteredList = this.data.homeworkList;
+      this.setData({
+        filteredList,
+        groupedList: this.buildGroupedList(filteredList)
+      });
     } else {
       const filteredList = this.data.homeworkList.filter(
         item => item.subject === subject
       );
-      this.setData({ filteredList });
+      this.setData({
+        filteredList,
+        groupedList: this.buildGroupedList(filteredList)
+      });
     }
   },
 
@@ -182,11 +270,13 @@ Page({
           // 如果是模拟数据，直接从列表中移除
           if (id.startsWith('mock_')) {
             const newList = this.data.homeworkList.filter(item => item._id !== id);
+            const filteredList = this.data.selectedSubject === '全部' 
+              ? newList 
+              : newList.filter(item => item.subject === this.data.selectedSubject);
             this.setData({
               homeworkList: newList,
-              filteredList: this.data.selectedSubject === '全部' 
-                ? newList 
-                : newList.filter(item => item.subject === this.data.selectedSubject)
+              filteredList,
+              groupedList: this.buildGroupedList(filteredList)
             });
             wx.showToast({
               title: '删除成功',
@@ -194,6 +284,37 @@ Page({
             });
             return;
           }
+
+              // 如果是本地模拟数据，同样从本地存储里移除
+              if (id.startsWith('local_')) {
+                const localKey = 'local_homework_tasks';
+                try {
+                  const existed = wx.getStorageSync(localKey) || [];
+                  const newLocal = Array.isArray(existed)
+                    ? existed.filter(item => item && item._id !== id)
+                    : [];
+                  wx.setStorageSync(localKey, newLocal);
+                } catch (error) {
+                  console.error('本地删除失败:', error);
+                }
+
+                const newList = this.data.homeworkList.filter(item => item._id !== id);
+                const filteredList = this.data.selectedSubject === '全部'
+                  ? newList
+                  : newList.filter(item => item.subject === this.data.selectedSubject);
+
+                this.setData({
+                  homeworkList: newList,
+                  filteredList,
+                  groupedList: this.buildGroupedList(filteredList)
+                });
+
+                wx.showToast({
+                  title: '删除成功',
+                  icon: 'success'
+                });
+                return;
+              }
 
           // 真实数据从数据库删除
           try {
@@ -229,6 +350,16 @@ Page({
     const hour = String(date.getHours()).padStart(2, '0');
     const minute = String(date.getMinutes()).padStart(2, '0');
     return `${year}-${month}-${day} ${hour}:${minute}`;
+  },
+
+  // 格式化成用于分组的日期键：YYYY-MM-DD
+  formatDate(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 });
 

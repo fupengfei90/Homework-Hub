@@ -13,7 +13,7 @@ App({
           //   env 参数决定接下来小程序发起的云开发调用（wx.cloud.xxx）会默认请求到哪个云环境的资源
           //   此处请填入环境 ID, 环境 ID 可打开云控制台查看
           //   如不填则使用默认环境（第一个创建的环境）
-          // env: 'your-env-id', // 如果注释掉，会使用默认环境
+          env: 'your-env-id', // 请替换为你的云环境ID
           traceUser: true,
         });
         console.log('云开发初始化成功');
@@ -27,6 +27,9 @@ App({
 
     // 检查提醒
     this.checkReminders();
+
+    // 尝试从云端恢复已开启的提醒到本地（避免清空本地后提醒丢失）
+    this.syncRemindersFromCloud();
     
     // 设置定时检查提醒（每分钟检查一次）
     this.reminderTimer = setInterval(() => {
@@ -46,35 +49,51 @@ App({
   // 检查提醒
   checkReminders() {
     try {
+      if (this._reminderModalOpen) return;
+
       // 获取所有存储的提醒
       const storageInfo = wx.getStorageInfoSync();
       const reminderKeys = storageInfo.keys.filter(key => key.startsWith('reminder_'));
 
       const now = Date.now();
-      
-      reminderKeys.forEach(key => {
+
+      // 一次只弹一个，避免多个提醒同时触发时造成连环弹窗
+      for (const key of reminderKeys) {
         const reminderData = wx.getStorageSync(key);
-        if (reminderData && reminderData.reminderTime) {
-          const reminderTime = reminderData.reminderTime;
-          const timeDiff = reminderTime - now;
-          
-          // 如果提醒时间到了（允许5分钟误差）
-          if (timeDiff <= 0 && timeDiff >= -300000) {
-            // 显示提醒
-            this.showReminder(reminderData);
-            
-            // 清除这个提醒（避免重复提醒）
-            wx.removeStorageSync(key);
+        if (!reminderData) continue;
+
+        // 兼容旧数据：之前存的是 reminderTime（具体时间戳）；新数据存 nextReminderTime + baseReminderTime
+        const nextReminderTime = reminderData.nextReminderTime || reminderData.reminderTime;
+        if (!nextReminderTime) continue;
+
+        const baseReminderTime = reminderData.baseReminderTime || this.timestampToHHmm(nextReminderTime);
+        const timeDiff = now - nextReminderTime;
+
+        // 如果提醒时间到了（允许5分钟误差）
+        if (timeDiff >= 0 && timeDiff <= 300000) {
+          // 确保本地有 baseReminderTime，后续才能推进到“明天同一时间”
+          if (!reminderData.baseReminderTime || !reminderData.nextReminderTime) {
+            wx.setStorageSync(key, {
+              ...reminderData,
+              baseReminderTime,
+              nextReminderTime
+            });
           }
+
+          this.showReminder(reminderData, key, baseReminderTime);
+          return;
         }
-      });
+      }
     } catch (error) {
       console.error('检查提醒失败:', error);
     }
   },
 
   // 显示提醒
-  showReminder(reminderData) {
+  showReminder(reminderData, reminderKey, baseReminderTime) {
+    if (this._reminderModalOpen) return;
+    this._reminderModalOpen = true;
+
     wx.showModal({
       title: '⏰ 作业提醒',
       content: `该写作业了！\n\n${reminderData.homeworkTitle || '作业'}`,
@@ -90,17 +109,78 @@ App({
               url: `/pages/detail/detail?id=${reminderData.homeworkId}`
             });
           }
-        } else if (res.cancel) {
-          // 用户点击"稍后提醒"，5分钟后再次提醒
-          const newReminderTime = Date.now() + 5 * 60 * 1000;
-          const reminderKey = `reminder_${reminderData.homeworkId}`;
+
+          // 即便用户马上去写，也不删除提醒；下一次固定推进到“明天同一 HH:mm”
+          const nextTs = this.computeNextReminderTimestamp(baseReminderTime, new Date());
           wx.setStorageSync(reminderKey, {
             ...reminderData,
-            reminderTime: newReminderTime
+            baseReminderTime,
+            nextReminderTime: nextTs
+          });
+        } else if (res.cancel) {
+          // 用户点击"稍后提醒"，5分钟后再次提醒
+          const newNextReminderTime = Date.now() + 5 * 60 * 1000;
+          wx.setStorageSync(reminderKey, {
+            ...reminderData,
+            baseReminderTime,
+            nextReminderTime: newNextReminderTime
           });
         }
+
+        this._reminderModalOpen = false;
       }
     });
+  },
+
+  // 从云数据库恢复到本地，保证“清理缓存后仍能每天提醒”
+  async syncRemindersFromCloud() {
+    try {
+      if (!wx.cloud) return;
+      const db = wx.cloud.database();
+
+      const result = await db.collection('homeworkReminders')
+        .where({
+          enabled: true,
+          isCompleted: false
+        })
+        .get();
+
+      if (!result.data || result.data.length === 0) return;
+
+      result.data.forEach(rem => {
+        if (!rem.homeworkId || !rem.reminderTime) return;
+
+        const reminderKey = `reminder_${rem.homeworkId}`;
+        const nextTs = this.computeNextReminderTimestamp(rem.reminderTime, new Date());
+        wx.setStorageSync(reminderKey, {
+          homeworkId: rem.homeworkId,
+          homeworkTitle: rem.homeworkTitle || '作业',
+          baseReminderTime: rem.reminderTime, // HH:mm
+          nextReminderTime: nextTs // 时间戳
+        });
+      });
+    } catch (error) {
+      console.error('同步云端提醒失败:', error);
+    }
+  },
+
+  // 计算“下次提醒时间戳”（基于固定 HH:mm），若当天已过则顺延到明天
+  computeNextReminderTimestamp(baseHHmm, nowDate) {
+    const [hour, minute] = (baseHHmm || '').split(':').map(Number);
+    const d = new Date(nowDate || Date.now());
+    d.setHours(hour, minute, 0, 0);
+    if (d <= new Date()) {
+      d.setDate(d.getDate() + 1);
+    }
+    return d.getTime();
+  },
+
+  // 把时间戳转成 HH:mm
+  timestampToHHmm(timestamp) {
+    const d = new Date(timestamp);
+    const hour = String(d.getHours()).padStart(2, '0');
+    const minute = String(d.getMinutes()).padStart(2, '0');
+    return `${hour}:${minute}`;
   },
 
   // 获取用户信息

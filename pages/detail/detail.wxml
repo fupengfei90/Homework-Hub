@@ -20,8 +20,67 @@
 
     <!-- 作业内容 -->
     <view class="detail-content">
-      <view class="content-label">作业内容：</view>
+      <view class="content-header">
+        <view class="content-label">作业内容：</view>
+        <!-- 语音朗读按钮 -->
+        <view class="read-aloud-btn {{isReading ? 'reading' : ''}}" bindtap="toggleReadAloud">
+          <text class="read-icon">{{isReading ? '⏹️' : '🔊'}}</text>
+          <text class="read-text">{{isReading ? '停止' : '朗读'}}</text>
+        </view>
+      </view>
       <view class="content-text">{{homework.content}}</view>
+    </view>
+
+    <!-- 大按钮朗读区域（方便小朋友点击） -->
+    <view class="big-read-section">
+      <!-- 朗读模式切换 -->
+      <view class="read-mode-section">
+        <view class="mode-label">朗读模式：</view>
+        <view class="mode-buttons">
+          <view class="mode-btn {{readMode === 'original' ? 'active' : ''}}"
+                data-mode="original"
+                bindtap="switchReadMode">
+            <text>📝</text>
+            <text>原文</text>
+          </view>
+          <view class="mode-btn {{readMode === 'translated' ? 'active' : ''}}"
+                data-mode="translated"
+                bindtap="switchReadMode">
+            <text>🌐</text>
+            <text>翻译</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 目标语言选择（仅在翻译模式显示） -->
+      <view class="target-lang-section" wx:if="{{readMode === 'translated'}}">
+        <view class="lang-label">目标语言：</view>
+        <view class="lang-buttons">
+          <view class="lang-btn {{targetLang === 'en' ? 'active' : ''}}"
+                data-lang="en"
+                bindtap="switchTargetLang">
+            <text>🇬🇧</text>
+            <text>英语</text>
+          </view>
+          <view class="lang-btn {{targetLang === 'zh' ? 'active' : ''}}"
+                data-lang="zh"
+                bindtap="switchTargetLang">
+            <text>🇨🇳</text>
+            <text>中文</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 朗读按钮 -->
+      <button class="big-read-btn {{isReading ? 'reading' : ''}}" bindtap="toggleReadAloud">
+        <view class="big-read-icon">{{isReading ? '⏹️' : '📢'}}</view>
+        <view class="big-read-title">
+          {{isReading ? '点我停止' : (readMode === 'translated' ? '读翻译内容' : '读原文')}}
+        </view>
+        <view class="big-read-hint">
+          {{isReading ? '正在朗读中...' : (readMode === 'translated' ? '翻译后朗读' : '让我读给你听')}}
+        </view>
+      </button>
     </view>
 
     <!-- 视频文件/链接 -->

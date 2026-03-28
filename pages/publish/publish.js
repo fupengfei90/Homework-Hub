@@ -19,7 +19,13 @@ Page({
     inputMode: 'link', // 'link' 或 'upload'，默认使用链接模式
     showAIParse: false, // 是否显示AI智能识别
     aiParseContent: '', // AI识别的原始内容
-    aiParsing: false // 是否正在AI识别
+    aiParsing: false, // 是否正在AI识别
+
+    // AI生成"今天作业"（可生成多条）
+    bulkAiContent: '',
+    bulkAiContentLength: 0,
+    bulkAiParsing: false,
+    bulkDrafts: [] // [{subject,title,content,videoUrl,audioUrl}]
   },
 
   onLoad() {
@@ -80,10 +86,221 @@ Page({
     }
   },
 
+  // 输入老师"今天作业描述"（可包含多条）
+  onBulkAiInput(e) {
+    const value = e.detail.value || '';
+    this.setData({
+      bulkAiContent: value,
+      bulkAiContentLength: value.length
+    });
+  },
+
+  // AI生成今天作业（多条）
+  async generateTodayHomeworks() {
+    const content = (this.data.bulkAiContent || '').trim();
+    if (!content) {
+      wx.showToast({ title: '请先输入老师描述', icon: 'none' });
+      return;
+    }
+
+    this.setData({ bulkAiParsing: true, bulkDrafts: [] });
+    wx.showLoading({ title: '生成中...', mask: true });
+
+    // 检查云开发是否可用
+    const canUseCloud = !!wx.cloud && typeof wx.cloud.callFunction === 'function';
+
+    if (canUseCloud) {
+      try {
+        // 尝试调用云函数
+        const result = await Promise.race([
+          wx.cloud.callFunction({
+            name: 'aiParse',
+            data: {
+              content,
+              mode: 'bulk'
+            }
+          }),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('云函数调用超时')), 3000)
+          )
+        ]);
+
+        wx.hideLoading();
+        this.setData({ bulkAiParsing: false });
+
+        if (result.result && result.result.success) {
+          const data = result.result.data;
+          const tasks = data && data.tasks ? data.tasks : [];
+          if (!tasks.length) {
+            wx.showToast({ title: '没有解析到作业任务', icon: 'none' });
+            return;
+          }
+
+          this.setData({ bulkDrafts: tasks });
+          wx.showToast({
+            title: `已生成 ${tasks.length} 条作业`,
+            icon: 'success',
+            duration: 2000
+          });
+          return;
+        } else {
+          const errMsg = result.result?.error || '生成失败';
+          console.warn('云函数返回错误:', errMsg);
+          // 继续尝试本地解析
+        }
+      } catch (error) {
+        console.warn('云函数调用失败，使用本地解析:', error.message || error);
+        // 继续尝试本地解析
+      }
+    } else {
+      console.log('云开发未初始化，直接使用本地解析');
+    }
+
+    // 使用本地解析
+    console.log('解析内容:', content);
+    const localTasks = this.localBulkParse(content);
+    console.log('本地解析结果:', localTasks);
+
+    wx.hideLoading();
+    this.setData({ bulkAiParsing: false });
+
+    if (localTasks && localTasks.length) {
+      this.setData({ bulkDrafts: localTasks });
+      wx.showToast({ title: `已使用本地解析预览（${localTasks.length}条）`, icon: 'none', duration: 2500 });
+      return;
+    }
+
+    wx.showToast({ title: '生成失败，请稍后重试', icon: 'none' });
+  },
+
+  // 将AI生成的多条作业批量写入数据库（都归为"今天"）
+  async publishBulkHomeworks() {
+    if (!this.data.bulkDrafts || !this.data.bulkDrafts.length) {
+      wx.showToast({ title: '请先生成作业', icon: 'none' });
+      return;
+    }
+
+    wx.showLoading({ title: '发布中...', mask: true });
+
+    const now = Date.now();
+    const localKey = 'local_homework_tasks';
+    const canUseCloud = !!wx.cloud && typeof wx.cloud.database === 'function';
+
+    try {
+      if (canUseCloud) {
+        const db = wx.cloud.database();
+        for (const task of this.data.bulkDrafts) {
+          const title = (task && task.title ? task.title : '').trim();
+          const subject = (task && task.subject ? task.subject : '').trim();
+          const content = task && task.content ? task.content : '';
+
+          if (!title || !content || !subject) continue;
+
+          const videoUrl = task.videoUrl || '';
+          const audioUrl = task.audioUrl || '';
+
+          await db.collection('homework').add({
+            data: {
+              title,
+              content,
+              subject,
+              videoUrl: videoUrl,
+              audioUrl: audioUrl,
+              isVideoLink: !!videoUrl,
+              isAudioLink: !!audioUrl,
+              createTime: now,
+              updateTime: now
+            }
+          });
+        }
+
+        wx.hideLoading();
+        wx.showToast({ title: '发布成功', icon: 'success' });
+      } else {
+        throw new Error('云开发不可用，使用本地模拟发布');
+      }
+
+      this.setData({
+        bulkAiContent: '',
+        bulkAiContentLength: 0,
+        bulkDrafts: [],
+        title: '',
+        content: '',
+        videoUrl: '',
+        audioUrl: '',
+        videoLink: '',
+        audioLink: '',
+        videoName: '',
+        audioName: ''
+      });
+
+    } catch (error) {
+      console.error('批量发布失败:', error);
+      // 云写入失败时，用本地模拟保存，方便你在当前环境快速验证前端效果
+      try {
+        const existed = wx.getStorageSync(localKey) || [];
+        const newItems = this.data.bulkDrafts
+          .map((task, idx) => {
+            const title = (task && task.title ? task.title : '').trim();
+            const subject = (task && task.subject ? task.subject : '').trim();
+            const content = task && task.content ? task.content : '';
+            if (!title || !content || !subject) return null;
+            const videoUrl = task.videoUrl || '';
+            const audioUrl = task.audioUrl || '';
+            return {
+              _id: `local_${now}_${idx}`,
+              title,
+              content,
+              subject,
+              videoUrl,
+              audioUrl,
+              isVideoLink: !!videoUrl,
+              isAudioLink: !!audioUrl,
+              createTime: now,
+              updateTime: now
+            };
+          })
+          .filter(Boolean);
+
+        wx.setStorageSync(localKey, [...existed, ...newItems]);
+
+        wx.hideLoading();
+        wx.showToast({ title: '已保存到本地模拟（开通云开发后可同步）', icon: 'none' });
+
+        this.setData({
+          bulkAiContent: '',
+          bulkAiContentLength: 0,
+          bulkDrafts: [],
+          title: '',
+          content: '',
+          videoUrl: '',
+          audioUrl: '',
+          videoLink: '',
+          audioLink: '',
+          videoName: '',
+          audioName: ''
+        });
+
+        setTimeout(() => {
+          wx.switchTab({ url: '/pages/index/index' });
+        }, 1500);
+        return;
+      } catch (e2) {
+        wx.hideLoading();
+        wx.showToast({ title: '发布失败且本地模拟也失败', icon: 'none' });
+      }
+    }
+
+    // 若云写入成功，这里也跳转首页
+    setTimeout(() => {
+      wx.switchTab({ url: '/pages/index/index' });
+    }, 1500);
+  },
+
   // AI智能识别
   async aiParse() {
     const content = this.data.aiParseContent.trim();
-    
+
     if (!content) {
       wx.showToast({
         title: '请先输入或粘贴内容',
@@ -97,26 +314,6 @@ Page({
       title: '识别中...',
       mask: true
     });
-
-    // 先尝试使用本地规则匹配（快速响应）
-    try {
-      const localResult = this.localParse(content);
-      
-      // 如果本地识别成功，直接使用
-      if (localResult && (localResult.title || localResult.subject)) {
-        wx.hideLoading();
-        this.setData({ aiParsing: false });
-        
-        wx.showToast({
-          title: '识别完成',
-          icon: 'success',
-          duration: 2000
-        });
-        return;
-      }
-    } catch (error) {
-      console.error('本地识别失败:', error);
-    }
 
     // 尝试调用云函数（如果已部署）
     try {
@@ -137,10 +334,10 @@ Page({
 
       if (result.result && result.result.success) {
         const data = result.result.data;
-        
+
         // 自动填充表单
         this.fillForm(data);
-        
+
         wx.showToast({
           title: 'AI识别成功',
           icon: 'success',
@@ -161,7 +358,7 @@ Page({
       console.error('云函数调用失败，使用本地识别:', error);
       wx.hideLoading();
       this.setData({ aiParsing: false });
-      
+
       // 使用本地规则匹配
       this.localParse(content);
       wx.showToast({
@@ -195,7 +392,7 @@ Page({
   },
 
   // 本地规则匹配（备选方案）
-  localParse(content) {
+  localParse(content, shouldFillForm = true) {
     if (!content || !content.trim()) {
       wx.showToast({
         title: '内容为空',
@@ -279,14 +476,16 @@ Page({
       title = title.substring(0, 50);
     }
 
-    // 填充表单
-    this.fillForm({
-      title: title,
-      content: content,
-      subject: detectedSubject,
-      videoUrl: videoUrls[0] || '',
-      audioUrl: audioUrls[0] || ''
-    });
+    // 可选：填充表单（AI单条识别复用；批量预览时不想覆盖输入框）
+    if (shouldFillForm) {
+      this.fillForm({
+        title: title,
+        content: content,
+        subject: detectedSubject,
+        videoUrl: videoUrls[0] || '',
+        audioUrl: audioUrls[0] || ''
+      });
+    }
 
     return {
       title,
@@ -295,6 +494,83 @@ Page({
       videoUrl: videoUrls[0] || '',
       audioUrl: audioUrls[0] || ''
     };
+  },
+
+  // 本地批量解析备选（用于云开发不可用时的预览）
+  localBulkParse(content) {
+    console.log('localBulkParse 开始，content:', content);
+
+    if (!content || !content.trim()) {
+      console.log('content 为空，返回空数组');
+      return [];
+    }
+
+    // 识别本段出现了哪些学科；如果只出现一个学科，则强制不拆分
+    // 否则会把"要求：1/2/3条"误判为多条任务
+    const subjectKeywords = {
+      '语文': ['语文', '中文', '汉语', '古诗', '文言文', '作文', '阅读'],
+      '数学': ['数学', '算数', '计算', '方程', '几何', '代数'],
+      '英语': ['英语', '英文', 'English', '单词', '语法', '听力'],
+      '物理': ['物理', '力学', '电学', '光学', '实验'],
+      '化学': ['化学', '实验', '反应', '元素', '分子'],
+      '生物': ['生物', '细胞', '植物', '动物', '实验'],
+      '历史': ['历史', '古代', '朝代', '事件'],
+      '地理': ['地理', '地图', '气候', '地形'],
+      '政治': ['政治', '思想', '道德', '法律']
+    };
+
+    const detectedSubjects = Object.keys(subjectKeywords).filter(subject => {
+      const keywords = subjectKeywords[subject] || [];
+      return keywords.some(k => content.includes(k));
+    });
+
+    console.log('识别到的学科:', detectedSubjects);
+
+    if (detectedSubjects.length <= 1) {
+      console.log('学科数量 <= 1，不拆分，使用 single 模式');
+      const single = this.localParse(content, false);
+      console.log('single 解析结果:', single);
+      return single ? [single] : [];
+    }
+
+    // 若出现多个学科，优先按"学科："这种显式分段切
+    const subjectLabelRegex = /(语文|数学|英语|物理|化学|生物|历史|地理|政治)\s*[：:]/g;
+    const matches = [];
+    let m;
+    while ((m = subjectLabelRegex.exec(content)) !== null) {
+      matches.push({ subject: m[1], index: m.index });
+      if (matches.length >= 20) break;
+    }
+
+    console.log('按学科标签匹配结果:', matches);
+
+    if (matches.length >= 2) {
+      const tasks = matches
+        .map((cur, idx) => {
+          const start = cur.index;
+          const end = idx + 1 < matches.length ? matches[idx + 1].index : content.length;
+          const seg = content.slice(start, end).trim();
+          return this.localParse(seg, false);
+        })
+        .filter(Boolean);
+      console.log('按学科标签解析结果:', tasks);
+      return tasks;
+    }
+
+    // 最后兜底：按"行首的序号"切分（仍限制数量），避免拆成太碎
+    const parts = content
+      .split(/\n(?=\s*(?:\d+\s*[\.、]|（\s*\d+\s*）|[一二三四五六七八九十]+\s*[、\.]))/g)
+      .map(s => (s || '').trim())
+      .filter(s => s.length > 0);
+
+    console.log('按序号切分结果:', parts);
+
+    const segments = parts.length ? parts.slice(0, 20) : [content];
+    const tasks = segments
+      .map(seg => this.localParse(seg, false))
+      .filter(Boolean);
+    console.log('最终解析结果:', tasks);
+    return tasks;
   },
 
   // 选择学科
@@ -527,12 +803,25 @@ Page({
       mask: true
     });
 
+    // 检查云开发是否可用
+    const canUseCloud = !!wx.cloud && typeof wx.cloud.database === 'function';
+
+    if (!canUseCloud) {
+      wx.hideLoading();
+      wx.showToast({
+        title: '云开发未开通，请先配置云环境',
+        icon: 'none',
+        duration: 3000
+      });
+      return;
+    }
+
     try {
       const db = wx.cloud.database();
       // 优先使用链接，如果没有链接则使用上传的文件
       const videoUrl = this.data.videoLink || this.data.videoUrl;
       const audioUrl = this.data.audioLink || this.data.audioUrl;
-      
+
       const result = await db.collection('homework').add({
         data: {
           title: this.data.title,
@@ -575,8 +864,9 @@ Page({
       console.error('发布失败:', error);
       wx.hideLoading();
       wx.showToast({
-        title: '发布失败',
-        icon: 'none'
+        title: '发布失败，请检查云开发配置',
+        icon: 'none',
+        duration: 3000
       });
     }
   }

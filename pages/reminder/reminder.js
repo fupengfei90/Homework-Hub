@@ -42,6 +42,11 @@ Page({
           reminderEnabled: reminder.enabled || false
         });
         this.calculateStartTime();
+
+        // 如果云端启用了提醒，则把提醒同步到本地，保证每天重复提醒可持续。
+        if (this.data.reminderEnabled && this.data.reminderTime) {
+          this.setReminder(this.data.reminderTime);
+        }
       }
     } catch (error) {
       console.error('加载提醒设置失败:', error);
@@ -151,8 +156,8 @@ Page({
   setReminder(time) {
     if (!time) return;
 
-    const [hour, minute] = time.split(':').map(Number);
     const now = new Date();
+    const [hour, minute] = time.split(':').map(Number);
     const reminderDate = new Date();
     reminderDate.setHours(hour, minute, 0, 0);
 
@@ -161,27 +166,13 @@ Page({
       reminderDate.setDate(reminderDate.getDate() + 1);
     }
 
-    // 使用微信小程序的本地通知
-    // 注意：需要用户授权通知权限
-    wx.requestSubscribeMessage({
-      tmplIds: [], // 如果需要订阅消息，可以添加模板ID
-      success: (res) => {
-        console.log('订阅消息成功', res);
-      },
-      fail: (err) => {
-        console.log('订阅消息失败', err);
-      }
-    });
-
-    // 设置本地提醒（使用定时器）
-    const delay = reminderDate.getTime() - now.getTime();
-    
-    // 存储到本地存储，用于应用启动时检查
+    // 存储到本地存储：每天固定 HH:mm 触发，并在触发后由 app.js 自动推进到“下一天”。
     const reminderKey = `reminder_${this.data.homeworkId}`;
     wx.setStorageSync(reminderKey, {
       homeworkId: this.data.homeworkId,
       homeworkTitle: this.data.homeworkTitle,
-      reminderTime: reminderDate.getTime()
+      baseReminderTime: time, // HH:mm（固定每天的时间）
+      nextReminderTime: reminderDate.getTime() // 下一次触发的时间戳
     });
 
     wx.showToast({

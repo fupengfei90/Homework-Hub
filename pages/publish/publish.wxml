@@ -39,6 +39,58 @@
       </view>
     </view>
 
+  <!-- AI生成今天作业（多条） -->
+  <view class="bulk-ai-section">
+    <view class="bulk-ai-header">
+      <view class="ai-parse-title">
+        <text class="ai-icon">🤖</text>
+        <text>AI生成今天作业</text>
+        <text class="ai-hint">（根据老师描述拆分成多条）</text>
+      </view>
+    </view>
+
+    <view class="bulk-ai-content">
+      <view class="form-item bulk-form-item">
+        <view class="form-label">老师描述（粘贴今天作业内容）</view>
+        <textarea class="form-textarea bulk-ai-textarea"
+                  placeholder="例如：语文背诵《静夜思》；数学做1-10题；英语听读...（可包含视频/音频链接）"
+                  value="{{bulkAiContent}}"
+                  bindinput="onBulkAiInput"
+                  maxlength="2000"
+                  show-confirm-bar="{{false}}"/>
+        <view class="char-count">{{bulkAiContentLength}}/2000</view>
+      </view>
+
+      <view class="bulk-ai-actions">
+        <button class="parse-btn" 
+                bindtap="generateTodayHomeworks"
+                disabled="{{bulkAiParsing || !bulkAiContent}}">
+          {{bulkAiParsing ? '生成中...' : '开始生成'}}
+        </button>
+      </view>
+
+      <view class="bulk-drafts" wx:if="{{bulkDrafts && bulkDrafts.length}}">
+        <view class="bulk-preview-title">
+          预览（{{bulkDrafts.length}}条，点击下方确认发布）
+        </view>
+        <view class="draft-list">
+          <view class="draft-item"
+                wx:for="{{bulkDrafts}}"
+                wx:key="index">
+            <view class="draft-title">{{item.title}}</view>
+            <view class="draft-subject">{{item.subject}}</view>
+          </view>
+        </view>
+
+        <button class="submit-btn bulk-submit-btn"
+                bindtap="publishBulkHomeworks"
+                disabled="{{bulkAiParsing}}">
+          确认批量发布为今天作业
+        </button>
+      </view>
+    </view>
+  </view>
+
     <!-- 作业标题 -->
     <view class="form-item">
       <view class="form-label">作业标题 <text class="required">*</text></view>

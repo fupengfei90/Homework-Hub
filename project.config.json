@@ -46,11 +46,13 @@
     "useCompilerPlugins": false,
     "condition": false,
     "swc": false,
-    "disableSWC": true
+    "disableSWC": true,
+    "skylineRenderEnable": false,
+    "ignoreHTTPDomain": true
   },
   "compileType": "miniprogram",
-  "libVersion": "2.19.4",
-  "appid": "wx6c184d4015c008d0",
+  "libVersion": "2.16.0",
+  "appid": "wxf411547346544cb4",
   "projectname": "homework-hub",
   "condition": {},
   "editorSetting": {

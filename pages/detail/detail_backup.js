@@ -116,7 +116,7 @@ Page({
         createTime: this.formatTime(now - 72 * 60 * 60 * 1000)
       }
     };
-
+    
     return mockDataMap[id] || null;
   },
 
@@ -160,7 +160,7 @@ Page({
       // 尝试从数据库加载
       const db = wx.cloud.database();
       const result = await db.collection('homework').doc(id).get();
-
+      
       if (result.data) {
         const homework = {
           ...result.data,
@@ -213,10 +213,10 @@ Page({
   // 播放视频
   playVideo() {
     if (!this.data.homework.videoUrl) return;
-
+    
     const videoUrl = this.data.homework.videoUrl;
     const isLink = this.isLink(videoUrl);
-
+    
     if (isLink) {
       // 如果是链接，直接使用链接
       this.setData({
@@ -256,7 +256,7 @@ Page({
 
     const audioUrl = this.data.homework.audioUrl;
     const isLink = this.isLink(audioUrl);
-
+    
     if (isLink) {
       // 如果是链接，直接使用链接
       this.setData({
@@ -335,7 +335,7 @@ Page({
       });
       return;
     }
-
+    
     wx.navigateTo({
       url: `/pages/reminder/reminder?id=${this.data.homework._id}&title=${encodeURIComponent(this.data.homework.title)}`
     });
@@ -359,7 +359,7 @@ Page({
   switchReadMode(e) {
     const mode = e.currentTarget.dataset.mode;
     this.setData({ readMode: mode });
-
+    
     const modeText = mode === 'original' ? '原文朗读' : '翻译朗读';
     wx.showToast({
       title: `已切换为${modeText}`,
@@ -371,7 +371,7 @@ Page({
   switchTargetLang(e) {
     const lang = e.currentTarget.dataset.lang;
     this.setData({ targetLang: lang });
-
+    
     const langText = lang === 'en' ? '英语' : '中文';
     wx.showToast({
       title: `目标语言已切换为${langText}`,
