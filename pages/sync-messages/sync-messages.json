@@ -1,0 +1,6 @@
+{
+  "usingComponents": {},
+  "navigationBarTitleText": "班级消息",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark"
+}

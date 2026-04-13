@@ -3,7 +3,8 @@
     "pages/index/index",
     "pages/publish/publish",
     "pages/detail/detail",
-    "pages/reminder/reminder"
+    "pages/reminder/reminder",
+    "pages/sync-messages/sync-messages"
   ],
   "window": {
     "backgroundTextStyle": "light",
@@ -26,6 +27,10 @@
       {
         "pagePath": "pages/publish/publish",
         "text": "➕ 发布作业"
+      },
+      {
+        "pagePath": "pages/sync-messages/sync-messages",
+        "text": "💬 班级消息"
       }
     ]
   },

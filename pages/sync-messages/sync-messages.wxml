@@ -1,0 +1,85 @@
+<!--pages/sync-messages/sync-messages.wxml-->
+<view class="container">
+  <!-- 标题 -->
+  <view class="header">
+    <text class="title">班级消息</text>
+    <text class="subtitle">来自微信群的同步消息</text>
+  </view>
+
+  <!-- 类型筛选 -->
+  <view class="filter-bar">
+    <view
+      class="filter-item {{currentType === item.value ? 'active' : ''}}"
+      wx:for="{{types}}"
+      wx:key="value"
+      data-type="{{item.value}}"
+      bindtap="switchType"
+    >
+      {{item.label}}
+    </view>
+  </view>
+
+  <!-- 消息列表 -->
+  <view class="message-list">
+    <!-- 加载中 -->
+    <view wx:if="{{loading}}" class="loading">
+      <text>加载中...</text>
+    </view>
+
+    <!-- 空状态 -->
+    <view wx:elif="{{messages.length === 0}}" class="empty">
+      <text class="empty-icon">📭</text>
+      <text class="empty-text">暂无消息</text>
+      <text class="empty-tip">确保itchat脚本正在运行</text>
+    </view>
+
+    <!-- 消息列表 -->
+    <block wx:else>
+      <view class="message-item" wx:for="{{messages}}" wx:key="_id" data-item="{{item}}" bindtap="viewDetail">
+        <!-- 消息类型标签 -->
+        <view class="message-type {{item.messageType}}">
+          {{getTypeLabel(item.messageType)}}
+        </view>
+
+        <!-- 发送者信息 -->
+        <view class="message-sender">
+          <view class="avatar-text">
+            {{item.senderName ? item.senderName.charAt(0) : '发'}}
+          </view>
+          <view class="sender-info">
+            <text class="sender-name">{{item.senderName}}</text>
+            <text class="group-name">{{item.groupName}}</text>
+          </view>
+        </view>
+
+        <!-- 消息内容 -->
+        <view class="message-content">
+          <text>{{item.content}}</text>
+        </view>
+
+        <!-- 底部信息 -->
+        <view class="message-footer">
+          <text class="message-time">{{item.formatTime}}</text>
+
+          <!-- 操作按钮 -->
+          <view class="message-actions">
+            <view class="action-btn" data-content="{{item.content}}" catchtap="copyMessage">
+              <text>复制</text>
+            </view>
+            <view class="action-btn delete" data-id="{{item._id}}" catchtap="deleteMessage">
+              <text>删除</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <!-- 使用说明 -->
+  <view class="tips">
+    <view class="tips-title">💡 使用说明</view>
+    <view class="tips-item">1. 确保itchat脚本正在运行</view>
+    <view class="tips-item">2. 被监听的群和用户发送消息会自动同步</view>
+    <view class="tips-item">3. 系统会自动识别作业和通知</view>
+  </view>
+</view>
